@@ -1,0 +1,15 @@
+sudo: required
+services:
+  - docker
+language: go
+go:
+  - "1.11"
+env:
+  - CGO_ENABLED=0
+
+install: true
+
+script:
+  - env
+  - docker network ls || true
+  - go test -v ./...

@@ -4,6 +4,7 @@ import (
 	"context"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
@@ -46,10 +47,13 @@ func (c *Container) Stop(id string) error {
 type ContainerBuilder struct {
 	client       *client.Client
 	image        string
+	cmd          []string
 	name         string
 	network      string
 	envs         []string
+	exposedPorts nat.PortSet
 	portBindings map[nat.Port][]nat.PortBinding
+	mounts       []mount.Mount
 }
 
 func (c *Container) Builder() *ContainerBuilder {
@@ -68,6 +72,11 @@ func (cb *ContainerBuilder) WithImage(image string) *ContainerBuilder {
 	return cb
 }
 
+func (cb *ContainerBuilder) WithCmd(cmd []string) *ContainerBuilder {
+	cb.cmd = cmd
+	return cb
+}
+
 func (cb *ContainerBuilder) WithEnv(name, value string) *ContainerBuilder {
 	cb.envs = append(cb.envs, name+"="+value)
 	return cb
@@ -78,8 +87,18 @@ func (cb *ContainerBuilder) WithNetwork(network string) *ContainerBuilder {
 	return cb
 }
 
+func (cb *ContainerBuilder) WithExposedPorts(exposedPorts nat.PortSet) *ContainerBuilder {
+	cb.exposedPorts = exposedPorts
+	return cb
+}
+
 func (cb *ContainerBuilder) WithPortBindings(b map[nat.Port][]nat.PortBinding) *ContainerBuilder {
 	cb.portBindings = b
+	return cb
+}
+
+func (cb *ContainerBuilder) WithMounts(mounts []mount.Mount) *ContainerBuilder {
+	cb.mounts = mounts
 	return cb
 }
 
@@ -87,14 +106,17 @@ func (cb *ContainerBuilder) Create() (string, error) {
 	ctx := context.Background()
 
 	containerCfg := &container.Config{
-		Image: cb.image,
-		Env:   cb.envs,
+		Image:        cb.image,
+		Env:          cb.envs,
+		Cmd:          cb.cmd,
+		ExposedPorts: cb.exposedPorts,
 	}
 
 	hostCfg := &container.HostConfig{
 		AutoRemove:   true,
 		NetworkMode:  container.NetworkMode(cb.network),
 		PortBindings: cb.portBindings,
+		Mounts:       cb.mounts,
 	}
 
 	networkdCfg := &network.NetworkingConfig{}

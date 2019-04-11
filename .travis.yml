@@ -9,5 +9,9 @@ env:
 
 install: true
 
+before_script:
+  - docker network ls
+  - docker network prune
+
 script:
   - go test -v ./...

@@ -12,12 +12,13 @@ import (
 )
 
 func TestKafkaIntegration(t *testing.T) {
+	// TODO Randomize network name
+	const network = "kafka-itest"
 	// setup code
 	dc, err := docker.NewDockerController()
 	require.NoError(t, err)
 
-	// TODO Randomize network name
-	_, err = dc.Network().Create("docker-sdk")
+	_, err = dc.Network().Create(network)
 	require.NoError(t, err)
 
 	zookeeperID, err := dc.Container().Builder().
@@ -26,7 +27,7 @@ func TestKafkaIntegration(t *testing.T) {
 		WithEnv("ZOOKEEPER_CLIENT_PORT", "2181").
 		WithEnv("ZOOKEEPER_TICK_TIME", "2000").
 		WithEnv("ZOOKEEPER_LOG4J_ROOT_LOGLEVEL", "ERROR").
-		WithNetwork("docker-sdk").
+		WithNetwork(network).
 		Create()
 	require.NoError(t, err)
 
@@ -43,7 +44,7 @@ func TestKafkaIntegration(t *testing.T) {
 		WithEnv("KAFKA_ZOOKEEPER_CONNECT", "zookeeper:2181").
 		WithEnv("KAFKA_BROKER_ID", "1").
 		WithEnv("KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR", "1").
-		WithNetwork("docker-sdk").
+		WithNetwork(network).
 		WithPortBindings(map[nat.Port][]nat.PortBinding{
 			"9092/tcp": {
 				nat.PortBinding{HostPort: strconv.Itoa(port)}},
@@ -77,7 +78,7 @@ func TestKafkaIntegration(t *testing.T) {
 	err = dc.Container().Stop(zookeeperID)
 	require.NoError(t, err)
 
-	err = dc.Network().Remove("docker-sdk")
+	err = dc.Network().Remove(network)
 	require.NoError(t, err)
 
 }

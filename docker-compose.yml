@@ -1,0 +1,47 @@
+version: '3'
+services:
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:5.1.2
+    network_mode: host
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+      - zookeeper-log:/var/lib/zookeeper/log
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_LOG4J_ROOT_LOGLEVEL: "ERROR"
+
+  kafka:
+    image: confluentinc/cp-kafka:5.1.2
+    network_mode: host
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+      - kafka-secrets:/etc/kafka/secrets
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_ZOOKEEPER_CONNECT: "localhost:2181"
+      KAFKA_BROKER_ID: 1
+      KAFKA_LOG4J_LOGGERS: "kafka=ERROR,kafka.controller=ERROR,kafka.log.LogCleaner=ERROR,kafka.producer.async.DefaultEventHandler=ERROR,kafka.request.logger=ERROR,state.change.logger=ERROR"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    depends_on:
+      - zookeeper
+
+  kube:
+    image: rancher/k3s:v0.3.0
+    command: server --disable-agent
+    network_mode: host
+    environment:
+      - K3S_CLUSTER_SECRET=somethingtotallyrandom
+      - K3S_KUBECONFIG_OUTPUT=/tmp/kubeconfig.yaml
+      - K3S_KUBECONFIG_MODE=666
+    volumes:
+      - k3s-server:/var/lib/rancher/k3s
+      - k3s-server:/tmp
+
+volumes:
+  k3s-server:
+  zookeeper-data:
+  zookeeper-log:
+  kafka-data:
+  kafka-secrets:

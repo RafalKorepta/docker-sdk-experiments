@@ -5,6 +5,7 @@ import (
 	"github.com/danielpacak/docker-sdk-experiments/test/common/io"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/go-connections/nat"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -15,6 +16,10 @@ import (
 )
 
 func TestK8SIntegration(t *testing.T) {
+	if testing.Short() {
+		t.Skip("This is an integration test")
+	}
+
 	const network = "k8s-itest"
 
 	// setup code
@@ -64,9 +69,14 @@ func TestK8SIntegration(t *testing.T) {
 		list, err := clientset.CoreV1().Namespaces().List(v1.ListOptions{})
 		require.NoError(t, err)
 
+		var namespaces []string
 		for _, n := range list.Items {
 			t.Logf("namespace: %s, status: %s", n.Name, n.Status)
+			namespaces = append(namespaces, n.Name)
 		}
+		assert.Contains(t, namespaces, "default")
+		assert.Contains(t, namespaces, "kube-system")
+		assert.Contains(t, namespaces, "kube-public")
 	})
 
 	// tear-down code

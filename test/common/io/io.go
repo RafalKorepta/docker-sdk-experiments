@@ -29,6 +29,7 @@ func WaitExists(t *testing.T, name string, timeout time.Duration) error {
 
 	first := true
 	return wait.Poll(pollInterval, timeout, func() (bool, error) {
+		t.Helper()
 		if !first {
 			t.Logf("Waiting for file %s to become available", name)
 		}
@@ -39,4 +40,3 @@ func WaitExists(t *testing.T, name string, timeout time.Duration) error {
 
 	})
 }
-

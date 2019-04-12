@@ -11,7 +11,7 @@ install: true
 
 before_script:
   - docker network ls
-  - docker ps -a
+  - docker info
 
 script:
   - go test -v ./...

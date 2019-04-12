@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/danielpacak/docker-sdk-experiments.svg?branch=master)](https://travis-ci.org/danielpacak/docker-sdk-experiments)
 
-## Apache Kafka integration test
+## Apache Kafka integration test - custom bridge network
 
 1. Create the `kafka-itest` network.
 1. Start `zookeeper` and `kafka` Docker containers.
@@ -13,7 +13,7 @@
 5. Stop `zookeeper` and `kafka` containers.
 6. Remove `kafka-itest` network.
 
-```test
+```text
 === RUN   TestKafkaIntegration
 --- PASS: TestKafkaIntegration (23.60s)
 === RUN   TestKafkaIntegration/Should_list_default_topics
@@ -23,6 +23,16 @@ PASS
 
 Process finished with exit code 0
 ```
+
+## Apache Kafka integration test - host network
+
+> NB This won't work on macOS
+
+1. Start `zookeeper` and `kafka` Docker containers and attach them to the `host`
+   network.
+2. Use Sarama to connect to Kafka at `localhost:9092`.
+3. Print Kafka topics.
+4. Stop `kafka` and `zookeeper` containers.
 
 ## Kubernetes (K3S) integration test
 
@@ -57,3 +67,7 @@ Process finished with exit code 0
 ## TODO
 
 1. Add example with accessing files from named volume.
+
+## Read
+
+1. [Networking features in Docker Desktop for Mac](https://docs.docker.com/docker-for-mac/networking/)

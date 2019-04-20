@@ -2,6 +2,8 @@
 
 [![Build Status](https://travis-ci.org/danielpacak/docker-sdk-experiments.svg?branch=master)](https://travis-ci.org/danielpacak/docker-sdk-experiments)
 
+More advanced examples compared to what you get from https://docs.docker.com/develop/sdk/examples/.
+
 ## Apache Kafka Integration Test
 
 1. Create the `kafka-itest` network.

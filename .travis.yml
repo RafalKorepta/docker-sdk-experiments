@@ -7,15 +7,9 @@ go:
 env:
   - GOOS=linux CGO_ENABLED=0
 
-addons:
-  apt:
-    packages:
-      - docker-ce
-
 install: true
 
 before_script:
-  - docker network ls
   - docker -v
   - docker-compose -v
 

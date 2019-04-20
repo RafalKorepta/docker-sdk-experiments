@@ -20,7 +20,10 @@ func TestIntegrationK8S(t *testing.T) {
 		t.Skip("This is an integration test")
 	}
 
-	const network = "k8s-itest"
+	const (
+		image   = "docker.io/rancher/k3s:v0.3.0"
+		network = "k8s-itest"
+	)
 
 	// setup code
 	dc, err := docker.NewDockerController()
@@ -29,8 +32,11 @@ func TestIntegrationK8S(t *testing.T) {
 	_, err = dc.Network().Create(network)
 	require.NoError(t, err)
 
+	err = dc.Image().Pull(image)
+	require.NoError(t, err)
+
 	containerID, err := dc.Container().Builder().
-		WithImage("rancher/k3s:v0.3.0").
+		WithImage(image).
 		WithCmd([]string{"server", "--disable-agent"}).
 		WithName("k3s").
 		WithEnv("K3S_CLUSTER_SECRET", "somethingtotallyrandom").

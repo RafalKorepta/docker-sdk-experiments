@@ -9,11 +9,14 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
+	"io"
+	"os"
 )
 
 type DockerController struct {
 	client *client.Client
 	n      *Network
+	image  *ImageSvc
 	c      *Container
 }
 
@@ -23,6 +26,9 @@ func NewDockerController() (*DockerController, error) {
 	return &DockerController{
 		client: client,
 		n: &Network{
+			client: client,
+		},
+		image: &ImageSvc{
 			client: client,
 		},
 		c: &Container{
@@ -141,6 +147,11 @@ func (cb *ContainerBuilder) Create() (string, error) {
 func (dc *DockerController) Network() *Network {
 	return dc.n
 }
+
+func (dc *DockerController) Image() *ImageSvc {
+	return dc.image
+}
+
 func (dc *DockerController) Container() *Container {
 	return dc.c
 }
@@ -158,7 +169,23 @@ func (n *Network) Create(name string) (string, error) {
 	return resp.ID, nil
 }
 
+// Remove removes a given network.
 func (n *Network) Remove(name string) error {
 	ctx := context.Background()
 	return n.client.NetworkRemove(ctx, name)
+}
+
+type ImageSvc struct {
+	client *client.Client
+}
+
+// Pull pulls an image or a repository from a registry.
+func (n *ImageSvc) Pull(name string) error {
+	ctx := context.Background()
+	out, err := n.client.ImagePull(ctx, name, types.ImagePullOptions{})
+	if err != nil {
+		panic(err)
+	}
+	_, err = io.Copy(os.Stdout, out)
+	return err
 }

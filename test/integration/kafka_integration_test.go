@@ -18,7 +18,11 @@ func TestKafkaIntegration(t *testing.T) {
 	}
 
 	// TODO Randomize network name
-	const network = "kafka-itest"
+	const (
+		network        = "kafka-itest"
+		imageZookeeper = "docker.io/confluentinc/cp-zookeeper:5.1.2"
+		imageKafka     = "docker.io/confluentinc/cp-kafka:5.1.2"
+	)
 	// setup code
 	dc, err := docker.NewDockerController()
 	require.NoError(t, err)
@@ -29,8 +33,14 @@ func TestKafkaIntegration(t *testing.T) {
 	localIP, err := net.GetLocalIP()
 	require.NoError(t, err)
 
+	err = dc.Image().Pull(imageZookeeper)
+	require.NoError(t, err)
+
+	err = dc.Image().Pull(imageKafka)
+	require.NoError(t, err)
+
 	zookeeperID, err := dc.Container().Builder().
-		WithImage("docker.io/confluentinc/cp-zookeeper:5.1.2").
+		WithImage(imageZookeeper).
 		WithName("zookeeper").
 		WithEnv("ZOOKEEPER_CLIENT_PORT", "2181").
 		WithEnv("ZOOKEEPER_TICK_TIME", "2000").
@@ -44,7 +54,7 @@ func TestKafkaIntegration(t *testing.T) {
 	require.NoError(t, err)
 
 	kafkaID, err := dc.Container().Builder().
-		WithImage("docker.io/confluentinc/cp-kafka:5.1.2").
+		WithImage(imageKafka).
 		WithName("kafka").
 		WithEnvf("KAFKA_ADVERTISED_LISTENERS", "PLAINTEXT://%s:9092", localIP).
 		WithEnv("KAFKA_ZOOKEEPER_CONNECT", "zookeeper:2181").

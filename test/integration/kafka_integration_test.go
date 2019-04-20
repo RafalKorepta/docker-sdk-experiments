@@ -1,13 +1,13 @@
 package integration
 
 import (
-	"github.com/Shopify/sarama"
+	"fmt"
 	"github.com/danielpacak/docker-sdk-experiments/test/common/docker"
-	testNet "github.com/danielpacak/docker-sdk-experiments/test/common/net"
+	"github.com/danielpacak/docker-sdk-experiments/test/common/kafka"
+	"github.com/danielpacak/docker-sdk-experiments/test/common/net"
 	"github.com/docker/go-connections/nat"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"strconv"
 	"testing"
 	"time"
 )
@@ -26,6 +26,9 @@ func TestKafkaIntegration(t *testing.T) {
 	_, err = dc.Network().Create(network)
 	require.NoError(t, err)
 
+	localIP, err := net.GetLocalIP()
+	require.NoError(t, err)
+
 	zookeeperID, err := dc.Container().Builder().
 		WithImage("docker.io/confluentinc/cp-zookeeper:5.1.2").
 		WithName("zookeeper").
@@ -33,50 +36,57 @@ func TestKafkaIntegration(t *testing.T) {
 		WithEnv("ZOOKEEPER_TICK_TIME", "2000").
 		WithEnv("ZOOKEEPER_LOG4J_ROOT_LOGLEVEL", "ERROR").
 		WithNetwork(network).
+		WithAutoRemove(true).
 		Create()
 	require.NoError(t, err)
 
 	err = dc.Container().Start(zookeeperID)
 	require.NoError(t, err)
 
-	port, err := testNet.GetFreePort()
-	require.NoError(t, err)
-
 	kafkaID, err := dc.Container().Builder().
 		WithImage("docker.io/confluentinc/cp-kafka:5.1.2").
 		WithName("kafka").
-		WithEnv("KAFKA_ADVERTISED_LISTENERS", "PLAINTEXT://kafka:9092").
+		WithEnvf("KAFKA_ADVERTISED_LISTENERS", "PLAINTEXT://%s:9092", localIP).
 		WithEnv("KAFKA_ZOOKEEPER_CONNECT", "zookeeper:2181").
 		WithEnv("KAFKA_BROKER_ID", "1").
 		WithEnv("KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR", "1").
+		WithEnv("KAFKA_AUTO_CREATE_TOPICS_ENABLE", "false").
 		WithNetwork(network).
 		WithPortBindings(map[nat.Port][]nat.PortBinding{
 			"9092/tcp": {
-				nat.PortBinding{HostPort: strconv.Itoa(port)}},
+				nat.PortBinding{HostPort: "9092"}},
 		}, ).
+		WithAutoRemove(true).
 		Create()
 	require.NoError(t, err)
 
 	err = dc.Container().Start(kafkaID)
 	require.NoError(t, err)
 
-	t.Run("Should list default topics", func(t *testing.T) {
-		brokerAddr := "localhost:" + strconv.Itoa(port)
+	t.Run("Should create and list topics", func(t *testing.T) {
+		brokerAddr := fmt.Sprintf("%s:9092", localIP)
 
 		time.Sleep(15 * time.Second)
 
-		config := sarama.NewConfig()
-
-		saramaClient, err := sarama.NewClient([]string{brokerAddr}, config)
+		admin, err := kafka.NewAdmin(t, []string{brokerAddr})
 		require.NoError(t, err)
 
-		topics, err := saramaClient.Topics()
+		err = admin.CreateTopic("test.topic.1")
+		require.NoError(t, err)
+
+		err = admin.CreateTopic("test.topic.2")
+		require.NoError(t, err)
+
+		time.Sleep(3 * time.Second)
+
+		topics, err := admin.GetTopicNames()
 		require.NoError(t, err)
 
 		t.Logf("Kafka topics: %v", topics)
-		assert.Contains(t, topics, "__confluent.support.metrics")
+		assert.Contains(t, topics, "test.topic.1")
+		assert.Contains(t, topics, "test.topic.2")
 
-		err = saramaClient.Close()
+		err = admin.Close()
 		require.NoError(t, err)
 	})
 

@@ -548,6 +548,7 @@
     "github.com/docker/docker/api/types/network",
     "github.com/docker/docker/client",
     "github.com/docker/go-connections/nat",
+    "github.com/stretchr/testify/assert",
     "github.com/stretchr/testify/require",
     "k8s.io/apimachinery/pkg/apis/meta/v1",
     "k8s.io/apimachinery/pkg/util/wait",

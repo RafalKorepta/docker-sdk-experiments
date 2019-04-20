@@ -2,6 +2,7 @@ package docker
 
 import (
 	"context"
+	"fmt"
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
@@ -54,6 +55,7 @@ type ContainerBuilder struct {
 	exposedPorts nat.PortSet
 	portBindings map[nat.Port][]nat.PortBinding
 	mounts       []mount.Mount
+	autoRemove   bool
 }
 
 func (c *Container) Builder() *ContainerBuilder {
@@ -82,6 +84,11 @@ func (cb *ContainerBuilder) WithEnv(name, value string) *ContainerBuilder {
 	return cb
 }
 
+func (cb *ContainerBuilder) WithEnvf(name, format string, a ...interface{}) *ContainerBuilder {
+	cb.envs = append(cb.envs, name+"="+fmt.Sprintf(format, a))
+	return cb
+}
+
 func (cb *ContainerBuilder) WithNetwork(network string) *ContainerBuilder {
 	cb.network = network
 	return cb
@@ -102,6 +109,11 @@ func (cb *ContainerBuilder) WithMounts(mounts []mount.Mount) *ContainerBuilder {
 	return cb
 }
 
+func (cb *ContainerBuilder) WithAutoRemove(autoRemove bool) *ContainerBuilder {
+	cb.autoRemove = autoRemove
+	return cb
+}
+
 func (cb *ContainerBuilder) Create() (string, error) {
 	ctx := context.Background()
 
@@ -113,7 +125,7 @@ func (cb *ContainerBuilder) Create() (string, error) {
 	}
 
 	hostCfg := &container.HostConfig{
-		AutoRemove:   true,
+		AutoRemove:   cb.autoRemove,
 		NetworkMode:  container.NetworkMode(cb.network),
 		PortBindings: cb.portBindings,
 		Mounts:       cb.mounts,

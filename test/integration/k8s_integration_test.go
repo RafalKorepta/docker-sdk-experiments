@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-func TestK8SIntegration(t *testing.T) {
+func TestIntegrationK8S(t *testing.T) {
 	if testing.Short() {
 		t.Skip("This is an integration test")
 	}
@@ -50,6 +50,7 @@ func TestK8SIntegration(t *testing.T) {
 				Target: "/output",
 			},
 		}).
+		WithAutoRemove(true).
 		Create()
 	require.NoError(t, err)
 
